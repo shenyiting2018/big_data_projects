@@ -1,0 +1,8 @@
+This file can only be processed via Python3 since we are using psutil library
+for cpu/mem analaysis. Ensure that `python -v` returns python 3 instead of
+python 2. Otherwise directly run python3 on the file.
+
+In my environment, <python> = python3
+
+command to run: python word_count_in_mem.py --filename=<file_name> --K=10 --chunk-size=100000
+if expect to run in debugging mode: run python word_count_in_mem.py --filename=<file_name> --K=10 --chunk-size=100000 --debug

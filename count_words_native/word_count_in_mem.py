@@ -38,12 +38,12 @@ def process_line(line, word_counter):
 def main():
     # Define and process arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--filename", "--filename", help="The input file name")
-    parser.add_argument("--K", "--K", help="The top K word counts, default is 10")
-    parser.add_argument("--chunk-size", "--chunk_size",
+    parser.add_argument("--filename", "-f", help="The input file name")
+    parser.add_argument("--K", help="The top K word counts, default is 10")
+    parser.add_argument("--chunk-size",
                         help="The chunk size for time granualarity, default is 10000")
-    parser.add_argument("--debug", "--debug", action="store_true", help="Enter debug mode")
-    parser.add_argument("--total-lines", "--total_lines", help="help tracking progress")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enter debug mode")
+    parser.add_argument("--total-lines", "--total_lines", help="help tracking progress. 400MB: 6618361, 8GB: 167381842, 32GB: 65066622")
     args = parser.parse_args()
 
     if not args.filename:
@@ -67,7 +67,6 @@ def main():
     mem_usages_output_filename = 'mem-usages-{}.debug'.format(filename.replace('.txt', ''))
     cpu_usages_output_filename = 'cpu-usages-{}.debug'.format(filename.replace('.txt', ''))
 
-
     # log timestamps
     start_processing_time = datetime.datetime.now()
     start_processing_timestamp = current_milli_time()
@@ -75,8 +74,6 @@ def main():
 
     start_logline = "Start processing at {}. pid: {}".format(str(start_processing_time), process)
     print(start_logline)
-
-
 
     # Open file and start processing
     with open(filename) as f:
@@ -192,7 +189,6 @@ Top {13} words and counts:
             line = "Word: {}, count: {}".format(word, count)
             print(line)
             f.write(line + "\n")
-
 
     if debug:
         with open(word_counts_output_filename, 'w') as f:
