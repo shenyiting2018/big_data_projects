@@ -33,7 +33,7 @@ def main():
     for words in data:
         for word in words:
             # string formatting with placeholders
-            print('{}{}{}'.format(word, ' ', 1))
+            print("%s%s%d" % (word, '\t', 1))
 
 
 if __name__ == "__main__":

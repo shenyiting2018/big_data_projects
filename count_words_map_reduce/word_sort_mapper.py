@@ -11,7 +11,7 @@ def read_dictionary(file):
 def main():
     data = read_dictionary(sys.stdin)
     for word, count in data:
-        print("{}{}{}".format(count, ' ', word))
+        print("%s%s%d".format(count, ' ', word))
 
 
 if __name__ == "__main__":

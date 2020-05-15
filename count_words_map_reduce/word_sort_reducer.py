@@ -17,7 +17,7 @@ def main():
     for current_count, group in itertools.groupby(data, operators.itemgetter(0)):
         try:
             words = [word for count, word in group]
-            print("{}{}{}".format(current_count, ' ', str(words)))
+            print("%s%s%d" % (current_count, '\t', str(words)))
         except ValueError:
             # count invalid, ignore it
             pass

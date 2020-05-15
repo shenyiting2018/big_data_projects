@@ -5,9 +5,6 @@ import itertools
 import operator
 import sys
 
-from itertools import groupby
-
-
 
 current_word = None
 current_count = 0
@@ -27,7 +24,7 @@ def main():
      for current_word, group in itertools.groupby(data, operator.itemgetter(0)):
         try:
             total_count = sum(int(count) for current_word, count in group)
-            print("{}{}{}".format(current_word, ' ', total_count))
+            print("%s%s%d" % (current_word, '\t', total_count))
         except ValueError:
             # if the word is not valid, ignore it
             pass
