@@ -1,0 +1,87 @@
+#!/bin/python3
+import os
+import argparse
+import time
+import datetime
+import subprocess
+
+
+def current_milli_time(): return int(round(time.time() * 1000))
+
+
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--linux-username", help="The linux username, eg, yshen")
+  parser.add_argument("--hadoop-username", help="The hadoop user name, eg, bigdata17")
+  parser.add_argument("--task-no", help="The task number, 1 = all words, 2 = words' length > 6")
+  parser.add_argument("--output-file", '-o', help="The output file on linux")
+  parser.add_argument("--input-file", "-f", help="The input file name in hdfs")
+  parser.add_argument("--debug-file", '-d', help="The debug file on linux")
+  parser.add_argument("--filter-word", action="store_true", help="Filter out words whose length is less than 6")
+  parser.add_argument("--phase-1-mapper", help="Number of mappers in phase 1")
+  parser.add_argument("--phase-2-mapper", help="Number of mappers in phase 2")
+
+  args = parser.parse_args()
+
+  linux_username = args.linux_username
+  hadoop_username = args.hadoop_username
+  filter_word = args.filter_word
+  output_file = args.output_file
+  input_file = args.input_file
+  debug_file = args.debug_file
+  phase_1_mapper = int(args.phase_1_mapper) 
+  phase_2_mapper = int(args.phase_2_mapper) 
+
+
+  # do cleanup
+  print('performing cleanup job....')
+  cleanup_command = 'HADOOP_USER_NAME={} hadoop fs -rm -r -f /user/{}/phase*'.format(hadoop_username, hadoop_username)
+  os.system(cleanup_command)
+  print('cleanup done')
+
+  # setup hadoop
+  os.system('setup cdh-5.12')
+
+  phase_1_command = 'HADOOP_USER_NAME={hadoop_username} hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-*streaming*.jar -D mapred.map.tasks={phase_1_mapper} -file /home/{linux_username}/count_words_map_reduce/{mapper_file} -mapper /home/{linux_username}/count_words_map_reduce/{mapper_file} -file /home/{linux_username}/count_words_map_reduce/word_count_reducer.py  -reducer /home/{linux_username}/count_words_map_reduce/word_count_reducer.py -input /user/{hadoop_username}/{input_file} -output /user/{hadoop_username}/phase-1-output > {debug_file}'.format(
+    linux_username=linux_username,
+    hadoop_username=hadoop_username, 
+    debug_file=debug_file, 
+    input_file=input_file,
+    mapper_file='word_count_mapper.py' if filter_word else 'word_count_mapper_non_trivial.py',
+    phase_1_mapper=str(phase_1_mapper)
+  )
+
+  print('phase_1_command:{}'.format(phase_1_command))
+
+  print('performing phase 1: word counting')
+  phase_1_start_timestamp = current_milli_time()
+  os.system(phase_1_command)
+  phase_1_complete_timestamp = current_milli_time()
+  print('word counting done, taking {} milliseconds'.format(str(phase_1_complete_timestamp - phase_1_start_timestamp)))
+
+
+  phase_2_command = 'HADOOP_USER_NAME={hadoop_username} hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-*streaming*.jar -D mapred.map.tasks={phase_2_mapper} -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -D  mapred.text.key.comparator.options=-n -file /home/{linux_username}/count_words_map_reduce/word_sort_mapper.py    -mapper /home/{linux_username}/count_words_map_reduce/word_sort_mapper.py -file /home/{linux_username}/count_words_map_reduce/word_sort_reducer.py    -reducer /home/{linux_username}/count_words_map_reduce/word_sort_reducer.py  -input /user/{hadoop_username}/phase-1-output/* -output /user/{hadoop_username}/phase-2-output > {debug_file}'.format(
+    linux_username=linux_username, 
+    hadoop_username=hadoop_username,
+    debug_file=debug_file,
+    phase_2_mapper=str(phase_2_mapper)
+  )
+  print('performing phase 2: word sorting')
+  phase_2_start_timestamp = current_milli_time()
+  os.system(phase_2_command)
+  phase_2_complete_timestamp = current_milli_time()
+  print('word sorting done, taking {} milliseconds'.format(str(phase_2_complete_timestamp - phase_2_complete_timestamp)))
+
+  sorting_command = 'HADOOP_USER_NAME={hadoop_username} hadoop fs -cat /user/{hadoop_username}/phase-2-output/part* | sort -n -k1 -r | head -n100'.format(hadoop_username=hadoop_username)
+
+  with open('/home/{linux_username}/count_words_map_reduce/{output_file}'.format(linux_username=linux_username, output_file=output_file), 'w') as f:
+    subprocess.run(sorting_command, shell=True, stdout=f)
+
+    f.write('number of phase 1 mappers: {}\n'.format(str(phase_1_mapper)))
+    f.write('number of phase 2 mappers: {}\n'.format(str(phase_2_mapper)))
+    f.write('phase 1 word count took: {} milliseconds\n'.format(str(phase_1_complete_timestamp - phase_1_start_timestamp)))
+    f.write('phase 2 word count took: {} milliseconds'.format(str(phase_2_complete_timestamp - phase_2_start_timestamp)))
+   
+
+if __name__ == "__main__":
+    main()

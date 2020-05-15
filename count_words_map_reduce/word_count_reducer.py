@@ -1,32 +1,31 @@
 #!/usr/bin/python
+
 # This is the first reducer that will be used for the top 100 words soring
-# The job of this reducer is to aggregate word count
-import itertools
-import operator
+# The job of this reducer is to do counting
 import sys
+
+from itertools import groupby
+from operator import itemgetter
 
 
 current_word = None
 current_count = 0
-word = None
 
 
 def read_mapper_output(file):
     for line in file:
-        # strip out whitespaces and lazy load
-        yield line.strip().split('\t', 1)
+        yield line.rstrip().split('\t', 1)
 
 
 def main():
     data = read_mapper_output(sys.stdin)
-    # Read data through standard input stream
-    # Group by the data's first element, which is the word
-     for current_word, group in itertools.groupby(data, operator.itemgetter(0)):
+    # read input
+    for current_word, group in groupby(data, itemgetter(0)):
         try:
             total_count = sum(int(count) for current_word, count in group)
             print("%s%s%d" % (current_word, '\t', total_count))
         except ValueError:
-            # if the word is not valid, ignore it
+            # ignore invalid words
             pass
 
 
