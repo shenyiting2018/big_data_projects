@@ -1,5 +1,6 @@
 #!/usr/bin/python
-
+# This is the first mapper that will be used for the top 100 words soring
+# The job of this mapper is to do a inverse index for word counting
 import string
 import sys
 
@@ -9,7 +10,7 @@ valid_chars = set(string.ascii_letters)
 
 
 def replace_invalid_chars(line):
-    # Java string buffer like structure
+    # Java string buffer like structure, this function replaces the invalid characters
     converted_output = []
     for character in line:
         if character in valid_chars or character == '\s':
@@ -25,11 +26,14 @@ def read_input(file):
         # yield each line to enable lazy load
         yield line.split()
 
-def main(separator = '\t'):
+
+def main():
+    # Read data through standard input stream
     data = read_input(sys.stdin)
     for words in data:
         for word in words:
-            print ('%s%s%d' % (word, separator, 1))
+            # string formatting with placeholders
+            print('{}{}{}'.format(word, ' ', 1))
 
 
 if __name__ == "__main__":
