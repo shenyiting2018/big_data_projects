@@ -1,11 +1,13 @@
-create table input_file(line string);
 
 create external table input_file(line string) 
-location '/user/bigdata17/input_files/';
+location '/user/bigdata17/bigdata_input_files/';
 
 create table words as
 select regexp_replace(input_file.line, '[^0-9A-Za-z ]+', '') as line
 from input_file;
+
+
+set mapred.map.tasks = 300;
 
 create table word_count as
 select word, count(1) as count from
