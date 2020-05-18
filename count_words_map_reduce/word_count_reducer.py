@@ -14,6 +14,7 @@ current_count = 0
 
 def read_mapper_output(file):
     for line in file:
+        # triming right side blank, otherwise may result in messed up format
         yield line.rstrip().split('\t', 1)
 
 
