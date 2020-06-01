@@ -5,3 +5,6 @@ venv/
 *.debug
 *.DS_Store
 *.out
+*.csv
+*venv*
+
