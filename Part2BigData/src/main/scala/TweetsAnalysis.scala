@@ -47,22 +47,22 @@ object TweetsAnalysis {
     System.setProperty("twitter4j.oauth.accessToken", accessToken)
     System.setProperty("twitter4j.oauth.accessTokenSecret", accessTokenSecret)
     val conf = new SparkConf().setAppName("tweetsAnalysis").setMaster("local[*]")
-    val ssc = new StreamingContext(conf, Seconds(10))
+    val ssc = new StreamingContext(conf, Seconds(1))
 
     //creating twitter input stream
-    val tweetsAll = TwitterUtils.createStream(ssc, None, filters)
+    val tweets = TwitterUtils.createStream(ssc, None, filters)
     //tweets.print()
 
     //filter the non-English tweets and those with no hashtag
-    tweetsAll.foreachRDD { (rdd, time) =>
+    tweets.foreachRDD { (rdd, time) =>
       rdd.map(t => {
         Map(
           "user" -> t.getUser.getScreenName,
-          "location" -> Option(t.getGeoLocation).map(geo => { s"${geo.getLatitude},${geo.getLongitude}"}),
+          //"location" -> Option(t.getGeoLocation).map(geo => { s"${geo.getLatitude},${geo.getLongitude}"}),
           "text" -> t.getText,
           "hashtags" -> t.getHashtagEntities.map(_.getText),
-          "retweet" -> t.getRetweetCount,
-          "language" -> t.getText
+          //"retweet" -> t.getRetweetCount,
+          "language" -> t.getLang
           //"sentiment" -> SentimentAnalysisUtils.detectSentiment(t.getText).toString
         )
       }).filter(v => {
@@ -72,13 +72,13 @@ object TweetsAnalysis {
     }
 
       val spec = StateSpec.function(updateTopic _)
-      val window = tweetsAll.transform(rdd => {
+      val window = tweets.transform(rdd => {
         rdd.map(t => {
           Map(
             "user"-> t.getUser.getScreenName,
             "text" -> t.getText,
             "hashtags" -> t.getHashtagEntities.map(_.getText),
-            "language" -> t.getText,
+            "language" -> t.getLang,
             "sentiment" -> SentimentAnalysisUtils.detectSentiment(t.getText).toString)
         })
       }).filter(v => {
@@ -94,19 +94,19 @@ object TweetsAnalysis {
         .map{case (topic, count) => (count, topic)}
         .transform(_.sortByKey(false)) //sorting as desc
 
-      var emergingTag = ""
+      var emergingTopic = ""
       topics.foreachRDD(rdd => {
         val top = rdd.top(1) //rdd.take(1)
-        top.foreach{case (count, topic) => emergingTag = topic}
+        top.foreach{case (count, topic) => emergingTopic = topic}
       })
 
       //select all tweets related emergingTag
       window.foreachRDD(rdd => {
-        //println("Emerging topic: %s".format(emergingTag))
+        println("Emerging topic: %s".format(emergingTopic))
         rdd.filter(t => {
-          val tweetsArray = t("hashtags").asInstanceOf[Array[String]]
-          tweetsArray.contains(emergingTag)
-        }).coalesce(1).saveAsTextFile("./result_" + emergingTag)
+          val tags = t("hashtags").asInstanceOf[Array[String]]
+          tags.contains(emergingTopic)
+        }).coalesce(1).saveAsTextFile("./result_" + emergingTopic)
       })
 
     // gotta define a checkpoint directory for mapWithState
