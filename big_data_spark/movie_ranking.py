@@ -1,14 +1,13 @@
 #!/usr/local/bin/python3
 
 import argparse
+import datetime
 
 from pyspark import SparkConf, SparkContext
 from prettytable import PrettyTable
 
 
-def generate_rdds(movie_file, review_file):
-    conf = SparkConf().setMaster("local").setAppName("MovieRanking")
-    spark_context = SparkContext(conf=conf)
+def generate_rdds(movie_file, review_file, spark_context):
     # generate rdds for reviews/movies
     reviews = spark_context.textFile(review_file)
     movies = spark_context.textFile(movie_file)
@@ -88,6 +87,8 @@ def main():
     parser.add_argument("--movie-file", help="The input file of movies")
     parser.add_argument("--task-2", action="store_true", help="For task 2")
     parser.add_argument("--K", "-k", help="Number of top K words")
+    parser.add_argument("--t")
+    parser.add_argument("--tuning", action="store_true")
     args = parser.parse_args()
 
     review_file = args.review_file
@@ -95,13 +96,35 @@ def main():
     is_task_2 = args.task_2
     k = args.K or 10
     k = int(k)
+    t = args.t
+    tuning = args.tuning
 
-    movies_tuple = generate_rdds(movie_file, review_file)
-
-    if is_task_2:
-        complete_task_2(movies_tuple)
+    threads = []
+    if tuning:
+        threads = [1, 2, 3, 5, 8, 13]
     else:
-        complete_task_1(movies_tuple, k)
+        threads = [t if t else 1]
+
+    for thread in threads:
+        master = 'local[{}]'.format(thread)
+
+        conf = SparkConf().setMaster(master).setAppName("MovieRanking")
+        spark_context = SparkContext(conf=conf)
+
+        print('spark conf: {}'.format(str(spark_context.getConf().getAll())))
+
+        time_start = datetime.datetime.now()
+        movies_tuple = generate_rdds(movie_file, review_file, spark_context)
+
+        if is_task_2:
+            complete_task_2(movies_tuple)
+        else:
+            complete_task_1(movies_tuple, k)
+
+        time_end = datetime.datetime.now()
+        print('threads:{}, duration: {}'.format(thread, time_end - time_start))
+        # SparkContext.stop(spark_context)
+        spark_context.stop()
 
 
 if __name__ == "__main__":
