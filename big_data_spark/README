@@ -1,0 +1,22 @@
+1. install spark
+brew install apache-spark
+
+2. Ensure pip3 is installed
+    run `pip3 --version` to ensure pip3 exists
+    if not install python3 through brew
+    * brew install python3  should automatically install pip3
+3. Install virtualenv
+    pip3 install virtualenv
+4. Create virtualenv (a tool to avoid dependencis messed up):
+     virtualenv venv
+5. activate virtualenv
+   source venv/bin/activate
+6. install pyspark in virtualenv
+    pip3 install pyspark
+7. install prettytable
+    pip3 install prettytable
+
+commands example
+
+python3 ./movie_ranking.py --review-file=/Users/liushiyao/Documents/yiting_projects/big_data_projects/big_data_spark/DataSet4_large/reviews_large.csv --movie-file=/Users/liushiyao/Documents/yiting_projects/big_data_projects/big_data_spark/DataSet4_large/movies_large.csv
+
